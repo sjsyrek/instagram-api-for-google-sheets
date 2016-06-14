@@ -365,11 +365,10 @@ var mediaSearch = function mediaSearch() {
   var lng = getInfo("Enter a longitude on which to center the search:");
   var dist = getInfo("Enter the radial distance to search (default is 1 km, maximum is 5 km):");
   var params = {};
-  if (!Number.isInteger(dist)) {
-    dist = "";
-  } else if (dist <= 0) {
+  if (dist <= 0) {
     dist = 1;
-  } else if (dist > 5000) {
+  }
+  if (dist > 5000) {
     dist = 5000;
   }
   if (dist !== "" && dist !== 1000) {
@@ -436,11 +435,10 @@ var locationsSearch = function locationsSearch() {
   var lng = getInfo("Enter a longitude on which to center the search:");
   var dist = getInfo("Enter the radial distance to search (default is 500 m, maximum is 750 m):");
   var params = {};
-  if (!Number.isInteger(dist)) {
-    dist = "";
-  } else if (dist <= 0) {
+  if (dist <= 0) {
     dist = 1;
-  } else if (dist > 750) {
+  }
+  if (dist > 750) {
     dist = 750;
   }
   if (dist !== "" && dist !== 500) {

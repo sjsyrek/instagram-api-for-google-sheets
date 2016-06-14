@@ -351,9 +351,8 @@ const mediaSearch = () => {
   const lng = getInfo(`Enter a longitude on which to center the search:`);
   let dist = getInfo(`Enter the radial distance to search (default is 1 km, maximum is 5 km):`);
   let params = {};
-  if (!Number.isInteger(dist)) { dist = ``; }
-  else if (dist <= 0) { dist = 1; }
-  else if (dist > 5000) { dist = 5000; }
+  if (dist <= 0) { dist = 1; }
+  if (dist > 5000) { dist = 5000; }
   if (dist !== `` && dist !== 1000) { params.distance = dist; }
   if (validate(lat) && validate(lng)) {
     params.lat = lat;
@@ -402,9 +401,8 @@ const locationsSearch = () => {
   const lng = getInfo(`Enter a longitude on which to center the search:`);
   let dist = getInfo(`Enter the radial distance to search (default is 500 m, maximum is 750 m):`);
   let params = {};
-  if (!Number.isInteger(dist)) { dist = ``; }
-  else if (dist <= 0) { dist = 1; }
-  else if (dist > 750) { dist = 750; }
+  if (dist <= 0) { dist = 1; }
+  if (dist > 750) { dist = 750; }
   if (dist !== `` && dist !== 500) { params.distance = dist; }
   if (validate(lat) && validate(lng)) {
     params.lat = lat;
