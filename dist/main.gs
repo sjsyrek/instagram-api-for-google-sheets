@@ -20,7 +20,7 @@ var onInstall = function onInstall(e) {
   return onOpen(e);
 };
 var onOpen = function onOpen() {
-  ui.createAddonMenu().addItem("Authorize", "auth").addItem("Deauthorize", "deauth").addSeparator().addSubMenu(ui.createMenu("Users").addItem("Get data about me", "usersSelf").addItem("Get data about a user", "usersUserId").addItem("Get my recent posts", "usersSelfMediaRecent").addItem("Get a user's recent posts", "usersUserIdMediaRecent").addItem("Get the posts I recently liked", "usersSelfMediaLiked").addItem("Search for a user by name", "usersSearch")).addToUi();
+  ui.createAddonMenu().addItem("Authorize", "auth").addItem("Deauthorize", "deauth").addSeparator().addSubMenu(ui.createMenu("Users").addItem("Get data about me", "usersSelf").addItem("Get data about a user", "usersUserId").addItem("Get my recent posts", "usersSelfMediaRecent").addItem("Get a user's recent posts", "usersUserIdMediaRecent").addItem("Get the posts I recently liked", "usersSelfMediaLiked").addItem("Search for a user by name", "usersSearch")).addSubMenu(ui.createMenu("Relationships").addItem("Get the list of users I follow", "usersSelfFollows").addItem("Get the list of users who follow me", "usersSelfFollowedBy").addItem("List the users who have requested to follow me", "usersSelfRequestedBy").addItem("Get information about my relationship with a user", "usersUserIdRelationship")).addSubMenu(ui.createMenu("Media").addItem("Get information about a post", "mediaMediaId").addItem("Search for recent media in a given area", "mediaSearch")).addSubMenu(ui.createMenu("Comments").addItem("Get a list of recent comments made on a post", "mediaMediaIdComments")).addSubMenu(ui.createMenu("Likes").addItem("Get a list users who have liked a post", "mediaMediaIdLikes")).addSubMenu(ui.createMenu("Tags").addItem("Get information about a hashtag", "tagsTagName").addItem("Get a the posts recently tagged with a hashtag", "tagsTagNameMediaRecent").addItem("Search for a hashtag by name", "tagsSearch")).addSubMenu(ui.createMenu("Locations").addItem("Get information about a location", "locationsLocationId").addItem("Get a list of recent posts from a given location", "locationsLocationIdMediaRecent").addItem("Search for a location by geographic coordinates", "locationsSearch")).addToUi();
 };
 
 /**
@@ -60,19 +60,6 @@ var setValue = function setValue(page) {
   var range = sheet.getRange(row, column, rowsToAdd, 2);
   range.setValues(values);
 };
-
-// /**
-//  * Parse the data contained in object items from a page of data and insert into the spreadsheet.
-//  * @param {Object} item - An object of data to parse.
-//  */
-// const parseObj = item => {
-//   let values = getValues(item);
-//   // let rowsToAdd = values.length;
-//   // if (maxRow - row < rowsToAdd) { sheet.insertRowsAfter(maxRow, rowsToAdd - (maxRow - row)); }
-//   //let range = sheet.getRange(row, column, values.length, 2);
-//   //range.setValues(values);
-//   return values;
-// }
 
 /**
  * Get the values from an item of data (including nested objects) and package into an array.
@@ -119,9 +106,42 @@ var getInfo = function getInfo(prompt) {
  * @return {string} userId - The user ID.
  */
 var getUserId = function getUserId() {
-  var userId = getInfo("Enter a User ID number:");
+  var userId = getInfo("Enter a user ID number:");
   if (userId !== "") {
     return userId;
+  }
+};
+
+/**
+ * Display a dialog box that requests an Instagram media ID from the user.
+ * @return {string} mediaId - The media ID.
+ */
+var getMediaId = function getMediaId() {
+  var mediaId = getInfo("Enter the media ID number of a post:");
+  if (mediaId !== "") {
+    return mediaId;
+  }
+};
+
+/**
+ * Display a dialog box that requests an Instagram tag name from the user.
+ * @return {string} tag - The tag name.
+ */
+var getTagName = function getTagName() {
+  var tagName = getInfo("Enter a hashtag:");
+  if (tagName !== "") {
+    return tagName;
+  }
+};
+
+/**
+ * Display a dialog box that requests an Instagram location ID from the user.
+ * @return {string} locationId - The location ID.
+ */
+var getLocationId = function getLocationId() {
+  var locationId = getInfo("Enter a location ID number:");
+  if (locationId !== "") {
+    return locationId;
   }
 };
 
@@ -311,5 +331,124 @@ var usersSearch = function usersSearch() {
   var name = getInfo("Enter a name to search for:");
   if (validate(name)) {
     insert(request("users/search", { q: name }));
+  }
+};
+
+var usersSelfFollows = function usersSelfFollows() {
+  return insert(request("users/self/follows"));
+};
+
+var usersSelfFollowedBy = function usersSelfFollowedBy() {
+  return insert(request("users/self/followed-by"));
+};
+
+var usersSelfRequestedBy = function usersSelfRequestedBy() {
+  return insert(request("users/self/requested-by"));
+};
+
+var usersUserIdRelationship = function usersUserIdRelationship() {
+  var userId = getUserId();
+  if (validate(userId)) {
+    insert(request("users/" + userId + "/relationship"));
+  }
+};
+
+var mediaMediaId = function mediaMediaId() {
+  var mediaId = getMediaId();
+  if (validate(mediaId)) {
+    insert(request("media/" + mediaId));
+  }
+};
+
+var mediaSearch = function mediaSearch() {
+  var lat = getInfo("Enter a latitude on which to center the search:");
+  var lng = getInfo("Enter a longitude on which to center the search:");
+  var dist = getInfo("Enter the radial distance to search (default is 1 km, maximum is 5 km):");
+  var params = {};
+  if (!Number.isInteger(dist)) {
+    dist = "";
+  } else if (dist <= 0) {
+    dist = 1;
+  } else if (dist > 5000) {
+    dist = 5000;
+  }
+  if (dist !== "" && dist !== 1000) {
+    params.distance = dist;
+  }
+  if (validate(lat) && validate(lng)) {
+    params.lat = lat;
+    params.lng = lng;
+    insert(request("media/search", params));
+  }
+};
+
+var mediaMediaIdComments = function mediaMediaIdComments() {
+  var mediaId = getMediaId();
+  if (validate(mediaId)) {
+    insert(request("media/" + mediaId + "/comments"));
+  }
+};
+
+var mediaMediaIdLikes = function mediaMediaIdLikes() {
+  var mediaId = getMediaId();
+  if (validate(mediaId)) {
+    insert(request("media/" + mediaId + "/likes"));
+  }
+};
+
+var tagsTagName = function tagsTagName() {
+  var tagName = getTagName();
+  if (validate(tagName)) {
+    insert(request("tags/" + tagName));
+  }
+};
+
+var tagsTagNameMediaRecent = function tagsTagNameMediaRecent() {
+  var tagName = getTagName();
+  if (validate(tagName)) {
+    insert(request("tags/" + tagName + "/media/recent"));
+  }
+};
+
+var tagsSearch = function tagsSearch() {
+  var tag = getInfo("Enter a hashtag to search for:");
+  if (validate(tag)) {
+    insert(request("tags/search", { q: tag }));
+  }
+};
+
+var locationsLocationId = function locationsLocationId() {
+  var locationId = getLocationId();
+  if (validate(locationId)) {
+    insert(request("locations/" + locationId));
+  }
+};
+
+var locationsLocationIdMediaRecent = function locationsLocationIdMediaRecent() {
+  var locationId = getLocationId();
+  if (validate(locationId)) {
+    insert(request("locations/" + locationId + "/media/recent"));
+  }
+};
+
+var locationsSearch = function locationsSearch() {
+  var lat = getInfo("Enter a latitude on which to center the search:");
+  var lng = getInfo("Enter a longitude on which to center the search:");
+  var dist = getInfo("Enter the radial distance to search (default is 500 m, maximum is 750 m):");
+  var params = {};
+  if (!Number.isInteger(dist)) {
+    dist = "";
+  } else if (dist <= 0) {
+    dist = 1;
+  } else if (dist > 750) {
+    dist = 750;
+  }
+  if (dist !== "" && dist !== 500) {
+    params.distance = dist;
+  }
+  if (validate(lat) && validate(lng)) {
+    params.lat = lat;
+    params.lng = lng;
+    insert(request("locations/search", params));
   }
 };

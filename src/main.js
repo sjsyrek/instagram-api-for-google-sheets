@@ -26,6 +26,26 @@ const onOpen = () => {
       .addItem(`Get a user's recent posts`, `usersUserIdMediaRecent`)
       .addItem(`Get the posts I recently liked`, `usersSelfMediaLiked`)
       .addItem(`Search for a user by name`, `usersSearch`))
+    .addSubMenu(ui.createMenu(`Relationships`)
+      .addItem(`Get the list of users I follow`, `usersSelfFollows`)
+      .addItem(`Get the list of users who follow me`, `usersSelfFollowedBy`)
+      .addItem(`List the users who have requested to follow me`, `usersSelfRequestedBy`)
+      .addItem(`Get information about my relationship with a user`, `usersUserIdRelationship`))
+    .addSubMenu(ui.createMenu(`Media`)
+      .addItem(`Get information about a post`, `mediaMediaId`)
+      .addItem(`Search for recent media in a given area`, `mediaSearch`))
+    .addSubMenu(ui.createMenu(`Comments`)
+      .addItem(`Get a list of recent comments made on a post`, `mediaMediaIdComments`))
+    .addSubMenu(ui.createMenu(`Likes`)
+      .addItem(`Get a list users who have liked a post`, `mediaMediaIdLikes`))
+    .addSubMenu(ui.createMenu(`Tags`)
+      .addItem(`Get information about a hashtag`, `tagsTagName`)
+      .addItem(`Get a the posts recently tagged with a hashtag`, `tagsTagNameMediaRecent`)
+      .addItem(`Search for a hashtag by name`, `tagsSearch`))
+    .addSubMenu(ui.createMenu(`Locations`)
+      .addItem(`Get information about a location`, `locationsLocationId`)
+      .addItem(`Get a list of recent posts from a given location`, `locationsLocationIdMediaRecent`)
+      .addItem(`Search for a location by geographic coordinates`, `locationsSearch`))
     .addToUi();
 }
 
@@ -96,9 +116,42 @@ const getInfo = prompt => {
  * @return {string} userId - The user ID.
  */
 const getUserId = () => {
-  const userId = getInfo(`Enter a User ID number:`);
+  const userId = getInfo(`Enter a user ID number:`);
   if (userId !== ``) {
     return userId;
+  }
+}
+
+/**
+ * Display a dialog box that requests an Instagram media ID from the user.
+ * @return {string} mediaId - The media ID.
+ */
+const getMediaId = () => {
+  const mediaId = getInfo(`Enter the media ID number of a post:`);
+  if (mediaId !== ``) {
+    return mediaId;
+  }
+}
+
+/**
+ * Display a dialog box that requests an Instagram tag name from the user.
+ * @return {string} tag - The tag name.
+ */
+const getTagName = () => {
+  const tagName = getInfo(`Enter a hashtag:`);
+  if (tagName !== ``) {
+    return tagName;
+  }
+}
+
+/**
+ * Display a dialog box that requests an Instagram location ID from the user.
+ * @return {string} locationId - The location ID.
+ */
+const getLocationId = () => {
+  const locationId = getInfo(`Enter a location ID number:`);
+  if (locationId !== ``) {
+    return locationId;
   }
 }
 
@@ -275,4 +328,87 @@ const usersSelfMediaLiked = () => insert(request(`users/self/media/liked`));
 const usersSearch = () => {
   const name = getInfo(`Enter a name to search for:`);
   if (validate(name)) { insert(request(`users/search`, {q: name})); }
+}
+
+const usersSelfFollows = () => insert(request(`users/self/follows`));
+
+const usersSelfFollowedBy = () => insert(request(`users/self/followed-by`));
+
+const usersSelfRequestedBy = () => insert(request(`users/self/requested-by`));
+
+const usersUserIdRelationship = () => {
+  const userId = getUserId();
+  if (validate(userId)) { insert(request(`users/${userId}/relationship`)); }
+}
+
+const mediaMediaId = () => {
+  const mediaId = getMediaId();
+  if (validate(mediaId)) { insert(request(`media/${mediaId}`)); }
+}
+
+const mediaSearch = () => {
+  const lat = getInfo(`Enter a latitude on which to center the search:`);
+  const lng = getInfo(`Enter a longitude on which to center the search:`);
+  let dist = getInfo(`Enter the radial distance to search (default is 1 km, maximum is 5 km):`);
+  let params = {};
+  if (!Number.isInteger(dist)) { dist = ``; }
+  else if (dist <= 0) { dist = 1; }
+  else if (dist > 5000) { dist = 5000; }
+  if (dist !== `` && dist !== 1000) { params.distance = dist; }
+  if (validate(lat) && validate(lng)) {
+    params.lat = lat;
+    params.lng = lng;
+    insert(request(`media/search`, params));
+  }
+}
+
+const mediaMediaIdComments = () => {
+  const mediaId = getMediaId();
+  if (validate(mediaId)) { insert(request(`media/${mediaId}/comments`)); }
+}
+
+const mediaMediaIdLikes = () => {
+  const mediaId = getMediaId();
+  if (validate(mediaId)) { insert(request(`media/${mediaId}/likes`)); }
+}
+
+const tagsTagName = () => {
+  const tagName = getTagName();
+  if (validate(tagName)) { insert(request(`tags/${tagName}`)); }
+}
+
+const tagsTagNameMediaRecent = () => {
+  const tagName = getTagName();
+  if (validate(tagName)) { insert(request(`tags/${tagName}/media/recent`)); }
+}
+
+const tagsSearch = () => {
+  const tag = getInfo(`Enter a hashtag to search for:`);
+  if (validate(tag)) { insert(request(`tags/search`, {q: tag})); }
+}
+
+const locationsLocationId = () => {
+  const locationId = getLocationId();
+  if (validate(locationId)) { insert(request(`locations/${locationId}`)); }
+}
+
+const locationsLocationIdMediaRecent = () => {
+  const locationId = getLocationId();
+  if (validate(locationId)) { insert(request(`locations/${locationId}/media/recent`)); }
+}
+
+const locationsSearch = () => {
+  const lat = getInfo(`Enter a latitude on which to center the search:`);
+  const lng = getInfo(`Enter a longitude on which to center the search:`);
+  let dist = getInfo(`Enter the radial distance to search (default is 500 m, maximum is 750 m):`);
+  let params = {};
+  if (!Number.isInteger(dist)) { dist = ``; }
+  else if (dist <= 0) { dist = 1; }
+  else if (dist > 750) { dist = 750; }
+  if (dist !== `` && dist !== 500) { params.distance = dist; }
+  if (validate(lat) && validate(lng)) {
+    params.lat = lat;
+    params.lng = lng;
+    insert(request(`locations/search`, params));
+  }
 }
