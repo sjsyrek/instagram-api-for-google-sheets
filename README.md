@@ -6,3 +6,5 @@ A Google Sheets Add-on for working with Instagram data. This app provides functi
 The source code is in ECMAScript 2015, which must be transpiled with [Babel](https://babeljs.io) to work as a [Google Apps Script](https://developers.google.com/apps-script/). Original source and transpiled code are both provided in this repository. Developed using the [node-google-apps-script] (https://www.npmjs.com/package/node-google-apps-script) npm package.
 
 Source code is documented following [JSDoc](http://usejsdoc.org) conventions.
+
+Note that on June 1, Instagram changed its API and now requires apps to undergo review before they can access most data. Until an app is approved, it operates in Sandbox mode and can only access the data of a limited set of invited users.
