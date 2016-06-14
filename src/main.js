@@ -39,21 +39,18 @@ const insert = data => data.forEach(page => setValue(page));
  * Set the values for a range of cells.
  * @param {Object[]} page - A page of data, consisting of objects and arrays.
  */
-const setValue = page => Array.isArray(page) ? page.forEach(item => parseObj(item)) : parseObj(page);
-
-/**
- * Parse the data contained in object items from a page of data and insert into the spreadsheet.
- * @param {Object} item - An object of data to parse.
- */
-const parseObj = item => {
+const setValue = page => {
+  let values = [];
+  if (Array.isArray(page)) { page.forEach(item => values = values.concat(getValues(item))); }
+  else { values = getValues(page); }
+  let rowsToAdd = values.length;
+  if (rowsToAdd === 0) { return; }
   let cell = sheet.getActiveCell();
-  let maxRow = sheet.getMaxRows();
   let row = cell.getRow();
   let column = cell.getColumn();
-  let values = getValues(item);
-  let rowsToAdd = values.length;
+  let maxRow = sheet.getMaxRows();
   if (maxRow - row < rowsToAdd) { sheet.insertRowsAfter(maxRow, rowsToAdd - (maxRow - row)); }
-  const range = sheet.getRange(row, column, values.length, 2);
+  let range = sheet.getRange(row, column, rowsToAdd, 2);
   range.setValues(values);
 }
 
@@ -263,26 +260,19 @@ const usersSelf = () => insert(request(`users/self`));
 
 const usersUserId = () => {
   const userId = getUserId();
-  if (validate(userId)) {
-    insert(request(`users/${userId}`));
-  }
+  if (validate(userId)) { insert(request(`users/${userId}`)); }
 }
 
 const usersSelfMediaRecent = () => insert(request(`users/self/media/recent`));
 
 const usersUserIdMediaRecent = () => {
   const userId = getUserId();
-  if (validate(userId)) {
-    insert(request(`users/${userId}/media/recent`));
-  }
+  if (validate(userId)) { insert(request(`users/${userId}/media/recent`)); }
 }
 
 const usersSelfMediaLiked = () => insert(request(`users/self/media/liked`));
 
 const usersSearch = () => {
   const name = getInfo(`Enter a name to search for:`);
-  if (validate(name)) {
-    const params = {q: name};
-    insert(request(`users/search`, params));
-  }
+  if (validate(name)) { insert(request(`users/search`, {q: name})); }
 }

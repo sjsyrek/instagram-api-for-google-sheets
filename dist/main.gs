@@ -38,28 +38,41 @@ var insert = function insert(data) {
  * @param {Object[]} page - A page of data, consisting of objects and arrays.
  */
 var setValue = function setValue(page) {
-  return Array.isArray(page) ? page.forEach(function (item) {
-    return parseObj(item);
-  }) : parseObj(page);
-};
-
-/**
- * Parse the data contained in object items from a page of data and insert into the spreadsheet.
- * @param {Object} item - An object of data to parse.
- */
-var parseObj = function parseObj(item) {
+  var values = [];
+  if (Array.isArray(page)) {
+    page.forEach(function (item) {
+      return values = values.concat(getValues(item));
+    });
+  } else {
+    values = getValues(page);
+  }
+  var rowsToAdd = values.length;
+  if (rowsToAdd === 0) {
+    return;
+  }
   var cell = sheet.getActiveCell();
-  var maxRow = sheet.getMaxRows();
   var row = cell.getRow();
   var column = cell.getColumn();
-  var values = getValues(item);
-  var rowsToAdd = values.length;
+  var maxRow = sheet.getMaxRows();
   if (maxRow - row < rowsToAdd) {
     sheet.insertRowsAfter(maxRow, rowsToAdd - (maxRow - row));
   }
-  var range = sheet.getRange(row, column, values.length, 2);
+  var range = sheet.getRange(row, column, rowsToAdd, 2);
   range.setValues(values);
 };
+
+// /**
+//  * Parse the data contained in object items from a page of data and insert into the spreadsheet.
+//  * @param {Object} item - An object of data to parse.
+//  */
+// const parseObj = item => {
+//   let values = getValues(item);
+//   // let rowsToAdd = values.length;
+//   // if (maxRow - row < rowsToAdd) { sheet.insertRowsAfter(maxRow, rowsToAdd - (maxRow - row)); }
+//   //let range = sheet.getRange(row, column, values.length, 2);
+//   //range.setValues(values);
+//   return values;
+// }
 
 /**
  * Get the values from an item of data (including nested objects) and package into an array.
@@ -297,7 +310,6 @@ var usersSelfMediaLiked = function usersSelfMediaLiked() {
 var usersSearch = function usersSearch() {
   var name = getInfo("Enter a name to search for:");
   if (validate(name)) {
-    var params = { q: name };
-    insert(request("users/search", params));
+    insert(request("users/search", { q: name }));
   }
 };
