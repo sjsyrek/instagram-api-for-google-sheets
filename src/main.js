@@ -107,7 +107,7 @@ const getInfo = prompt => {
   const response = ui.prompt(prompt, ui.ButtonSet.OK_CANCEL);
   if (response.getSelectedButton() === ui.Button.OK) {
     info = encodeURIComponent(response.getResponseText());
-  }
+  } else { info = -1; }
   return info;
 }
 
@@ -115,52 +115,66 @@ const getInfo = prompt => {
  * Display a dialog box that requests an Instagram user ID from the user.
  * @return {string} userId - The user ID.
  */
-const getUserId = () => {
-  const userId = getInfo(`Enter a user ID number:`);
-  if (userId !== ``) {
-    return userId;
-  }
-}
+const getUserId = () => getInfo(`Enter a user ID number:`);
 
 /**
  * Display a dialog box that requests an Instagram media ID from the user.
  * @return {string} mediaId - The media ID.
  */
-const getMediaId = () => {
-  const mediaId = getInfo(`Enter the media ID number of a post:`);
-  if (mediaId !== ``) {
-    return mediaId;
-  }
-}
+const getMediaId = () => getInfo(`Enter the media ID number of a post:`);
 
 /**
  * Display a dialog box that requests an Instagram tag name from the user.
  * @return {string} tag - The tag name.
  */
-const getTagName = () => {
-  const tagName = getInfo(`Enter a hashtag:`);
-  if (tagName !== ``) {
-    return tagName;
-  }
-}
+const getTagName = () => getInfo(`Enter a hashtag:`);
 
 /**
  * Display a dialog box that requests an Instagram location ID from the user.
  * @return {string} locationId - The location ID.
  */
-const getLocationId = () => {
-  const locationId = getInfo(`Enter a location ID number:`);
-  if (locationId !== ``) {
-    return locationId;
-  }
-}
+const getLocationId = () => getInfo(`Enter a location ID number:`);
 
 /**
- * Check whether a given input is a non-empty string.
- * @param {*} input - The input to validate.
- * @return {boolean} - True if the input is a non-empty string, false otherwise.
+ * Display a dialog box that asks the user to specify how many items to return.
+ * @return {string} count - The number of items to return.
  */
-const validate = input => typeof input === `string` && input !== `` ? true : false;
+const getCount = () => getInfo(`Enter the number of resources to return (leave blank to return default):`);
+
+/**
+ * Check whether a given input is an empty string.
+ * @param {*} input - The input to validate.
+ * @return {boolean} - True if the input is not an empty string, false otherwise.
+ */
+const validate = input => includes([undefined, null, NaN, ``, -1], input) ? false : true;
+
+/**
+ * Array.includes polyfill to determine whether an array contains a specified element.
+ * @param {Object[]} array - An array to check.
+ * @param {*} searchElement - The element to search for.
+ * @param {number=} fromIndex - An optional index to search from.
+ * @return {boolean} - True if the array contains the element, false otherwise.
+ */
+const includes = (array, searchElement, fromIndex = 0) => {
+  let O = Object(array);
+  let len = parseInt(O.length, 10) || 0;
+  if (len === 0) { return false; }
+  let n = parseInt(fromIndex);
+  let k;
+  if (n >= 0) {
+    k = n;
+  } else {
+    k = len + n;
+    if (k < 0) {k = 0;}
+  }
+  let currentElement;
+  while (k < len) {
+    currentElement = O[k];
+    if (searchElement === currentElement) { return true; } // NaN !== NaN
+    k++;
+  }
+  return false;
+}
 
 /**
  * Authorization functions
@@ -316,18 +330,38 @@ const usersUserId = () => {
   if (validate(userId)) { insert(request(`users/${userId}`)); }
 }
 
-const usersSelfMediaRecent = () => insert(request(`users/self/media/recent`));
+const usersSelfMediaRecent = () => {
+  const count = getCount();
+  if (count === -1) { return; }
+  if (!validate(count) || count <= 0) { insert(request(`users/self/media/recent`)); }
+  else { insert(request(`users/self/media/recent`, {count: count})); }
+}
 
 const usersUserIdMediaRecent = () => {
   const userId = getUserId();
-  if (validate(userId)) { insert(request(`users/${userId}/media/recent`)); }
+  if (validate(userId)) {
+    const count = getCount();
+    if (count === -1) { return; }
+    if (!validate(count) || count <= 0) { insert(request(`users/${userId}/media/recent`)); }
+    else { insert(request(`users/${userId}/media/recent`, {count: count})); }
+  }
 }
 
-const usersSelfMediaLiked = () => insert(request(`users/self/media/liked`));
+const usersSelfMediaLiked = () => {
+  const count = getCount();
+  if (count === -1) { return; }
+  if (!validate(count) || count <= 0) { insert(request(`users/self/media/liked`)); }
+  else { insert(request(`users/self/media/liked`, {count: count})); }
+}
 
 const usersSearch = () => {
   const name = getInfo(`Enter a name to search for:`);
-  if (validate(name)) { insert(request(`users/search`, {q: name})); }
+  if (validate(name)) {
+    const count = getCount();
+    if (count === -1) { return; }
+    if (!validate(count) || count <= 0) { insert(request(`users/search`, {q: name})); }
+    else { insert(request(`users/search`, {q: name, count: count})); }
+  }
 }
 
 const usersSelfFollows = () => insert(request(`users/self/follows`));
@@ -348,17 +382,18 @@ const mediaMediaId = () => {
 
 const mediaSearch = () => {
   const lat = getInfo(`Enter a latitude on which to center the search:`);
+  if (!validate(lat)) { return; }
   const lng = getInfo(`Enter a longitude on which to center the search:`);
+  if (!validate(lng)) { return; }
   let dist = getInfo(`Enter the radial distance to search (default is 1 km, maximum is 5 km):`);
+  if (dist === -1) { return; }
   let params = {};
   if (dist <= 0) { dist = 1; }
   if (dist > 5000) { dist = 5000; }
   if (dist !== `` && dist !== 1000) { params.distance = dist; }
-  if (validate(lat) && validate(lng)) {
-    params.lat = lat;
-    params.lng = lng;
-    insert(request(`media/search`, params));
-  }
+  params.lat = lat;
+  params.lng = lng;
+  insert(request(`media/search`, {params}));
 }
 
 const mediaMediaIdComments = () => {
@@ -378,7 +413,12 @@ const tagsTagName = () => {
 
 const tagsTagNameMediaRecent = () => {
   const tagName = getTagName();
-  if (validate(tagName)) { insert(request(`tags/${tagName}/media/recent`)); }
+  if (validate(tagName)) {
+    const count = getCount();
+    if (count === -1) { return; }
+    if (!validate(count) || count <= 0) { insert(request(`tags/${tagName}/media/recent`)); }
+    else { insert(request(`tags/${tagName}/media/recent`, {count: count})); }
+  }
 }
 
 const tagsSearch = () => {
@@ -398,15 +438,16 @@ const locationsLocationIdMediaRecent = () => {
 
 const locationsSearch = () => {
   const lat = getInfo(`Enter a latitude on which to center the search:`);
+  if (!validate(lat)) { return; }
   const lng = getInfo(`Enter a longitude on which to center the search:`);
+  if (!validate(lng)) { return; }
   let dist = getInfo(`Enter the radial distance to search (default is 500 m, maximum is 750 m):`);
+  if (dist === -1) { return; }
   let params = {};
   if (dist <= 0) { dist = 1; }
   if (dist > 750) { dist = 750; }
   if (dist !== `` && dist !== 500) { params.distance = dist; }
-  if (validate(lat) && validate(lng)) {
-    params.lat = lat;
-    params.lng = lng;
-    insert(request(`locations/search`, params));
-  }
+  params.lat = lat;
+  params.lng = lng;
+  insert(request(`locations/search`, params));
 }

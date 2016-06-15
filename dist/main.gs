@@ -97,6 +97,8 @@ var getInfo = function getInfo(prompt) {
   var response = ui.prompt(prompt, ui.ButtonSet.OK_CANCEL);
   if (response.getSelectedButton() === ui.Button.OK) {
     info = encodeURIComponent(response.getResponseText());
+  } else {
+    info = -1;
   }
   return info;
 };
@@ -106,10 +108,7 @@ var getInfo = function getInfo(prompt) {
  * @return {string} userId - The user ID.
  */
 var getUserId = function getUserId() {
-  var userId = getInfo("Enter a user ID number:");
-  if (userId !== "") {
-    return userId;
-  }
+  return getInfo("Enter a user ID number:");
 };
 
 /**
@@ -117,10 +116,7 @@ var getUserId = function getUserId() {
  * @return {string} mediaId - The media ID.
  */
 var getMediaId = function getMediaId() {
-  var mediaId = getInfo("Enter the media ID number of a post:");
-  if (mediaId !== "") {
-    return mediaId;
-  }
+  return getInfo("Enter the media ID number of a post:");
 };
 
 /**
@@ -128,10 +124,7 @@ var getMediaId = function getMediaId() {
  * @return {string} tag - The tag name.
  */
 var getTagName = function getTagName() {
-  var tagName = getInfo("Enter a hashtag:");
-  if (tagName !== "") {
-    return tagName;
-  }
+  return getInfo("Enter a hashtag:");
 };
 
 /**
@@ -139,19 +132,60 @@ var getTagName = function getTagName() {
  * @return {string} locationId - The location ID.
  */
 var getLocationId = function getLocationId() {
-  var locationId = getInfo("Enter a location ID number:");
-  if (locationId !== "") {
-    return locationId;
-  }
+  return getInfo("Enter a location ID number:");
 };
 
 /**
- * Check whether a given input is a non-empty string.
+ * Display a dialog box that asks the user to specify how many items to return.
+ * @return {string} count - The number of items to return.
+ */
+var getCount = function getCount() {
+  return getInfo("Enter the number of resources to return (leave blank to return default):");
+};
+
+/**
+ * Check whether a given input is an empty string.
  * @param {*} input - The input to validate.
- * @return {boolean} - True if the input is a non-empty string, false otherwise.
+ * @return {boolean} - True if the input is not an empty string, false otherwise.
  */
 var validate = function validate(input) {
-  return typeof input === "string" && input !== "" ? true : false;
+  return includes([undefined, null, NaN, "", -1], input) ? false : true;
+};
+
+/**
+ * Array.includes polyfill to determine whether an array contains a specified element.
+ * @param {Object[]} array - An array to check.
+ * @param {*} searchElement - The element to search for.
+ * @param {number=} fromIndex - An optional index to search from.
+ * @return {boolean} - True if the array contains the element, false otherwise.
+ */
+var includes = function includes(array, searchElement) {
+  var fromIndex = arguments.length <= 2 || arguments[2] === undefined ? 0 : arguments[2];
+
+  var O = Object(array);
+  var len = parseInt(O.length, 10) || 0;
+  if (len === 0) {
+    return false;
+  }
+  var n = parseInt(fromIndex);
+  var k = void 0;
+  if (n >= 0) {
+    k = n;
+  } else {
+    k = len + n;
+    if (k < 0) {
+      k = 0;
+    }
+  }
+  var currentElement = void 0;
+  while (k < len) {
+    currentElement = O[k];
+    if (searchElement === currentElement) {
+      return true;
+    } // NaN !== NaN
+    k++;
+  }
+  return false;
 };
 
 /**
@@ -313,24 +347,56 @@ var usersUserId = function usersUserId() {
 };
 
 var usersSelfMediaRecent = function usersSelfMediaRecent() {
-  return insert(request("users/self/media/recent"));
+  var count = getCount();
+  if (count === -1) {
+    return;
+  }
+  if (!validate(count) || count <= 0) {
+    insert(request("users/self/media/recent"));
+  } else {
+    insert(request("users/self/media/recent", { count: count }));
+  }
 };
 
 var usersUserIdMediaRecent = function usersUserIdMediaRecent() {
   var userId = getUserId();
   if (validate(userId)) {
-    insert(request("users/" + userId + "/media/recent"));
+    var count = getCount();
+    if (count === -1) {
+      return;
+    }
+    if (!validate(count) || count <= 0) {
+      insert(request("users/" + userId + "/media/recent"));
+    } else {
+      insert(request("users/" + userId + "/media/recent", { count: count }));
+    }
   }
 };
 
 var usersSelfMediaLiked = function usersSelfMediaLiked() {
-  return insert(request("users/self/media/liked"));
+  var count = getCount();
+  if (count === -1) {
+    return;
+  }
+  if (!validate(count) || count <= 0) {
+    insert(request("users/self/media/liked"));
+  } else {
+    insert(request("users/self/media/liked", { count: count }));
+  }
 };
 
 var usersSearch = function usersSearch() {
   var name = getInfo("Enter a name to search for:");
   if (validate(name)) {
-    insert(request("users/search", { q: name }));
+    var count = getCount();
+    if (count === -1) {
+      return;
+    }
+    if (!validate(count) || count <= 0) {
+      insert(request("users/search", { q: name }));
+    } else {
+      insert(request("users/search", { q: name, count: count }));
+    }
   }
 };
 
@@ -362,8 +428,17 @@ var mediaMediaId = function mediaMediaId() {
 
 var mediaSearch = function mediaSearch() {
   var lat = getInfo("Enter a latitude on which to center the search:");
+  if (!validate(lat)) {
+    return;
+  }
   var lng = getInfo("Enter a longitude on which to center the search:");
+  if (!validate(lng)) {
+    return;
+  }
   var dist = getInfo("Enter the radial distance to search (default is 1 km, maximum is 5 km):");
+  if (dist === -1) {
+    return;
+  }
   var params = {};
   if (dist <= 0) {
     dist = 1;
@@ -374,11 +449,9 @@ var mediaSearch = function mediaSearch() {
   if (dist !== "" && dist !== 1000) {
     params.distance = dist;
   }
-  if (validate(lat) && validate(lng)) {
-    params.lat = lat;
-    params.lng = lng;
-    insert(request("media/search", params));
-  }
+  params.lat = lat;
+  params.lng = lng;
+  insert(request("media/search", { params: params }));
 };
 
 var mediaMediaIdComments = function mediaMediaIdComments() {
@@ -405,7 +478,15 @@ var tagsTagName = function tagsTagName() {
 var tagsTagNameMediaRecent = function tagsTagNameMediaRecent() {
   var tagName = getTagName();
   if (validate(tagName)) {
-    insert(request("tags/" + tagName + "/media/recent"));
+    var count = getCount();
+    if (count === -1) {
+      return;
+    }
+    if (!validate(count) || count <= 0) {
+      insert(request("tags/" + tagName + "/media/recent"));
+    } else {
+      insert(request("tags/" + tagName + "/media/recent", { count: count }));
+    }
   }
 };
 
@@ -432,8 +513,17 @@ var locationsLocationIdMediaRecent = function locationsLocationIdMediaRecent() {
 
 var locationsSearch = function locationsSearch() {
   var lat = getInfo("Enter a latitude on which to center the search:");
+  if (!validate(lat)) {
+    return;
+  }
   var lng = getInfo("Enter a longitude on which to center the search:");
+  if (!validate(lng)) {
+    return;
+  }
   var dist = getInfo("Enter the radial distance to search (default is 500 m, maximum is 750 m):");
+  if (dist === -1) {
+    return;
+  }
   var params = {};
   if (dist <= 0) {
     dist = 1;
@@ -444,9 +534,7 @@ var locationsSearch = function locationsSearch() {
   if (dist !== "" && dist !== 500) {
     params.distance = dist;
   }
-  if (validate(lat) && validate(lng)) {
-    params.lat = lat;
-    params.lng = lng;
-    insert(request("locations/search", params));
-  }
+  params.lat = lat;
+  params.lng = lng;
+  insert(request("locations/search", params));
 };
